@@ -18,14 +18,15 @@
 
 #include <stdint.h>
 #include <stm32f407xx.h>
+#include "software_delay.h"
 
 #if !defined(__SOFT_FP__) && defined(__ARM_FP)
   #warning "FPU is not initialized, but the project is compiling for an FPU. Please initialize the FPU before use."
 #endif
 
-void SoftwareDelay(uint32_t tick)
+void EXTI0_IRQHandler(void)
 {
-	for (uint32_t i = 0; i <= tick; i++);
+	GPIO_IRQHandling(0);
 }
 
 int main(void)
@@ -48,7 +49,7 @@ int main(void)
 	{
 		if (GPIO_ReadFromInputPin(button.pGPIOx, button.GPIO_PinConfig.GPIO_PinNumber) == 1)  //pressed
 		{
-			SoftwareDelay(25000);
+			SoftwareDelay(5000);
 			GPIO_ToggleOutputPin(LD3.pGPIOx, LD3.GPIO_PinConfig.GPIO_PinNumber);
 		}
 	}

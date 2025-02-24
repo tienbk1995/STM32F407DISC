@@ -28,6 +28,20 @@ typedef struct
 	GPIO_PinConfig_t GPIO_PinConfig;
 } GPIO_Handle_t;
 
+typedef enum
+{
+	GPIOA_e,
+	GPIOB_e,
+	GPIOC_e,
+	GPIOD_e,
+	GPIOE_e,
+	GPIOF_e,
+	GPIOG_e,
+	GPIOH_e,
+	GPIOI_e,
+	GPIOMAX_e
+} GPIO_e;
+
 /*
  * @GPIO_PIN_NUMBERS
  * GPIO pin numbers
@@ -115,9 +129,9 @@ void GPIO_ToggleOutputPin(GPIO_RegDef_t *pGPIOx, uint8_t PinNumber);
 /*
  * IRQ Configuration and ISR handling
  */
-void GPIO_IRQInterruptConfig(uint8_t IRQNumber, uint8_t Priority, uint8_t EnorDi);
-void GPIO_IRQPriorityConfig(void);
-void GPIO_IRQHandling(uint8_t IRQNumber);
+void GPIO_IRQInterruptConfig(uint8_t IRQNumber, uint8_t EnorDi);
+void GPIO_IRQPriorityConfig(uint8_t IRQNumber, uint32_t Priority);
+void GPIO_IRQHandling(uint8_t PinNumber);
 
 /*
  * Configuration

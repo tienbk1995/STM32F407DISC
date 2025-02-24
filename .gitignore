@@ -1,0 +1,6 @@
+# Compiled source #
+###################
+**/.metadata/
+**/Debug/
+**/launch.json
+**/.settings/
