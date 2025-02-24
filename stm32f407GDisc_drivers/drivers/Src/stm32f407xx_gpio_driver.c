@@ -145,15 +145,18 @@ void GPIO_Init(GPIO_Handle_t *pGPIOHandle)
 	{
 		if (pGPIOHandle->GPIO_PinConfig.GPIO_PinMode == GPIO_MODE_IT_FT) // falling edge Interrupt mode
 		{
-			EXTI->FTSR |= (1 << Config1Bit);
+			EXTI->FTSR |= (1 << Config1Bit); // set falling
+			EXTI->RTSR &= ~(1 << Config1Bit);// clear rising
 		}
 		else if (pGPIOHandle->GPIO_PinConfig.GPIO_PinMode == GPIO_MODE_IT_RT) // rising edge Interrupt mode
 		{
-
+			EXTI->RTSR |= (1 << Config1Bit); // set rising
+			EXTI->FTSR &= ~(1 << Config1Bit);// clear falling
 		}
 		else // both falling and rising edges
 		{
-
+			EXTI->RTSR |= (1 << Config1Bit); // set rising
+			EXTI->FTSR |= (1 << Config1Bit);// set falling
 		}
 	}
 
