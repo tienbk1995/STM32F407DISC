@@ -271,7 +271,7 @@ void GPIO_Init(GPIO_Handle_t *pGPIOHandle)
 	pGPIOHandle->pGPIOx->PUPDR &= ~(0x3 << Config1Bit);
 	pGPIOHandle->pGPIOx->PUPDR |= pGPIOHandle->GPIO_PinConfig.GPIO_PinPuPdControl << Config2Bit;
 	// Output type
-	pGPIOHandle->pGPIOx->OTYPER &= ~(0x3 << Config1Bit);
+	pGPIOHandle->pGPIOx->OTYPER &= ~(0x1 << Config1Bit);
 	pGPIOHandle->pGPIOx->OTYPER |= pGPIOHandle->GPIO_PinConfig.GPIO_PinOPType << Config1Bit;
 
 
@@ -433,12 +433,12 @@ void GPIO_IRQPriorityConfig (uint8_t IRQNumber, uint8_t Priority)
 	*(  NVIC_PR_BASE_ADDR + iprx ) |=  ( Priority << shift_amount );
 }
 
-void GPIO_IRQHandling(uint8_t IRQNumber)
+void GPIO_IRQHandling(uint8_t PinNumber)
 {
 	// clear the EXTI->PR pending int
-	if (EXTI->PR & (1 << IRQNumber))
+	if (EXTI->PR & (1 << PinNumber))
 	{
-		EXTI->PR |= (1 << IRQNumber);
+		EXTI->PR |= (1 << PinNumber);
 	}
 }
 

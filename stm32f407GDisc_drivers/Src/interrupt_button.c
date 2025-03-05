@@ -30,7 +30,7 @@ void SoftwareDelay(uint32_t tick)
 
 void EXTI0_IRQHandler(void)
 {
-	GPIO_IRQHandling(GPIO_PIN_NO_5);
+	GPIO_IRQHandling(GPIO_PIN_NO_0);
 	GPIO_ToggleOutputPin(GPIOD, GPIO_PIN_NO_12);
 }
 
@@ -40,8 +40,7 @@ int main(void)
 	GPIO_Handle_t LED;
 
 	GPIO_Config(&LED, GPIOD, GPIO_PIN_NO_12, GPIO_MODE_OUT, GPIO_SPEED_FAST, GPIO_OP_TYPE_PP, GPIO_NO_PUPD, 0);
-	//GPIO_Config(&button, GPIOD, GPIO_PIN_NO_5, GPIO_MODE_IT_FT, GPIO_SPEED_FAST, GPIO_OP_TYPE_OD, GPIO_PIN_PU, 0);
-	GPIO_Config(&button, GPIOA, GPIO_PIN_NO_0, GPIO_MODE_IT_FT, GPIO_SPEED_FAST, GPIO_OP_TYPE_OD, GPIO_PIN_PU, 0);
+	GPIO_Config(&button, GPIOA, GPIO_PIN_NO_0, GPIO_MODE_IT_FT, GPIO_SPEED_FAST, GPIO_OP_TYPE_OD, GPIO_NO_PUPD, 0);
 
 	GPIO_PeriClockControl(LED.pGPIOx, ENABLE);
 	GPIO_PeriClockControl(button.pGPIOx, ENABLE);
@@ -51,7 +50,7 @@ int main(void)
 
 	// Interrupt config
 	GPIO_IRQInterruptConfig(IRQ_NO_EXTI0, ENABLE);
-	GPIO_IRQPriorityConfig(IRQ_NO_EXTI0, NVIC_IRQ_PRI15);
+	GPIO_IRQPriorityConfig(IRQ_NO_EXTI0, 0);
 
     /* Loop forever */
 	while(1)
