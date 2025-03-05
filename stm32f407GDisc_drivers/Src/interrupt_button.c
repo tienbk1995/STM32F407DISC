@@ -30,31 +30,32 @@ void SoftwareDelay(uint32_t tick)
 
 void EXTI0_IRQHandler(void)
 {
-	GPIO_IRQHandling(0);
+	GPIO_IRQHandling(GPIO_PIN_NO_5);
+	GPIO_ToggleOutputPin(GPIOD, GPIO_PIN_NO_12);
 }
 
 int main(void)
 {
 	GPIO_Handle_t button;
-	GPIO_Handle_t LD3;
+	GPIO_Handle_t LED;
 
-	GPIO_Config(&LD3, GPIOD, GPIO_PIN_NO_12, GPIO_MODE_OUT, GPIO_SPEED_FAST, GPIO_OP_TYPE_PP, GPIO_NO_PUPD, 0);
-	GPIO_Config(&button, GPIOA, GPIO_PIN_NO_0, GPIO_MODE_IN, GPIO_SPEED_FAST, GPIO_OP_TYPE_OD, GPIO_NO_PUPD, 0);
+	GPIO_Config(&LED, GPIOD, GPIO_PIN_NO_12, GPIO_MODE_OUT, GPIO_SPEED_FAST, GPIO_OP_TYPE_PP, GPIO_NO_PUPD, 0);
+	//GPIO_Config(&button, GPIOD, GPIO_PIN_NO_5, GPIO_MODE_IT_FT, GPIO_SPEED_FAST, GPIO_OP_TYPE_OD, GPIO_PIN_PU, 0);
+	GPIO_Config(&button, GPIOA, GPIO_PIN_NO_0, GPIO_MODE_IT_FT, GPIO_SPEED_FAST, GPIO_OP_TYPE_OD, GPIO_PIN_PU, 0);
 
-	GPIO_PeriClockControl(LD3.pGPIOx, ENABLE);
+	GPIO_PeriClockControl(LED.pGPIOx, ENABLE);
 	GPIO_PeriClockControl(button.pGPIOx, ENABLE);
 
 	GPIO_Init(&button);
-	GPIO_Init(&LD3);
+	GPIO_Init(&LED);
 
+	// Interrupt config
+	GPIO_IRQInterruptConfig(IRQ_NO_EXTI0, ENABLE);
+	GPIO_IRQPriorityConfig(IRQ_NO_EXTI0, NVIC_IRQ_PRI15);
 
     /* Loop forever */
 	while(1)
 	{
-		if (GPIO_ReadFromInputPin(button.pGPIOx, button.GPIO_PinConfig.GPIO_PinNumber) == 1)  //pressed
-		{
-			SoftwareDelay(5000);
-			GPIO_ToggleOutputPin(LD3.pGPIOx, LD3.GPIO_PinConfig.GPIO_PinNumber);
-		}
+		// DO NOTHING
 	}
 }
