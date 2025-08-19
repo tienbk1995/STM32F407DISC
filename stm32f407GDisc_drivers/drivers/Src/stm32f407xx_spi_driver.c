@@ -62,9 +62,9 @@ void SPI_PeriClockControl(SPI_RegDef_t *pSPIx, uint8_t EnorDi)
  * SPI Init
  */
 /*********************************************************************
- * @fn      		  - SPI_Init
+ * @fn      		  - SPI_HWInit
  *
- * @brief             - This function is to initialize the SPI driver
+ * @brief             - This function is to initialize the HW SPI driver
  *
  * @param[in]         - none
  * @param[in]         - none
@@ -75,9 +75,13 @@ void SPI_PeriClockControl(SPI_RegDef_t *pSPIx, uint8_t EnorDi)
  * @Note              -  none
 
  */
-void SPI_Init(SPI_Handle_t *pSPIHandle)
+void SPI_HWInit(SPI_Handle_t *pSPIHandle)
 {
 	uint32_t reg_value = 0;
+
+	// Enable clock
+	SPI_PeriClockControl(pSPIHandle->pSPIx, ENABLE);
+
 	// Device mode
 	reg_value |= (pSPIHandle->SPIConfig.SPI_DeviceMode << SPI_CR1_MSTR);
 	// Bus config
@@ -102,6 +106,8 @@ void SPI_Init(SPI_Handle_t *pSPIHandle)
 	reg_value |= pSPIHandle->SPIConfig.SPI_CPOL << SPI_CR1_CPOL;
 	// CPHA
 	reg_value |= pSPIHandle->SPIConfig.SPI_CPHA << SPI_CR1_CPHA;
+	// SSM
+	reg_value |= pSPIHandle->SPIConfig.SPI_SSM << SPI_CR1_SSM;
 	// Write setting into reg CR1
 	pSPIHandle->pSPIx->CR1 = reg_value;
 }
@@ -110,9 +116,9 @@ void SPI_Init(SPI_Handle_t *pSPIHandle)
  * SPI DeInit
  */
 /*********************************************************************
- * @fn      		  - SPI_DeInit
+ * @fn      		  - SPI_HWDeInit
  *
- * @brief             - This function is to de init
+ * @brief             - This function is to de-init HW
  *
  * @param[in]         - none
  * @param[in]         - none
@@ -123,7 +129,7 @@ void SPI_Init(SPI_Handle_t *pSPIHandle)
  * @Note              -  none
 
  */
-void SPI_DeInit(SPI_Handle_t *pSPIHandle)
+void SPI_HWDeInit(SPI_Handle_t *pSPIHandle)
 {
 
 }
@@ -247,4 +253,31 @@ void SPI_IRQPriorityConfig(uint8_t IRQNumber, uint32_t Priority)
 void SPI_IRQHandling(SPI_Handle_t *pSPIHandle)
 {
 
+}
+
+/*********************************************************************
+ * @fn      		  - SPI_PeripheralControl
+ *
+ * @brief             - Enables or disables the SPI peripheral.
+ *
+ * @param[in]         - pSPIHandle: Pointer to the SPI handle structure.
+ * @param[in]         - EnorDi: ENABLE or DISABLE macro.
+ *
+ * @return            - None
+ *
+ * @Note              - This function sets or clears the SPE (SPI Enable) bit in the SPI_CR1 register,
+ *                      allowing you to turn the SPI peripheral on or off as needed.
+ *********************************************************************/
+void SPI_PeripheralControl(SPI_Handle_t *pSPIHandle, uint8_t EnorDi)
+{
+    if (EnorDi == ENABLE)
+    {
+		pSPIHandle->pSPIx->CR1 |= (uint32_t)(1 << SPI_CR1_SSI);
+
+        pSPIHandle->pSPIx->CR1 |= (uint32_t)(1 << SPI_CR1_SPE);
+    }
+    else
+    {
+        pSPIHandle->pSPIx->CR1 &= ~(uint32_t)(1 << SPI_CR1_SPE);
+    }
 }

@@ -6,17 +6,14 @@
 /*********************************************************************
  * @fn      		  - MappingPortToNumerical
  *
- * @brief             - This function is to translate a configured port to a numerical
+ * @brief             - Translates a configured GPIO port to a numerical value (internal use).
  *
- * @param[in]         - none
- * @param[in]         - none
- * @param[in]         -
+ * @param[in]         - pGPIOHandle: Pointer to the GPIO handle structure.
  *
- * @return            -  none
+ * @return            - Enum value representing the port.
  *
- * @Note              -  none
-
- */
+ * @Note              - Used internally for SYSCFG configuration.
+ *********************************************************************/
 static GPIO_e MappingPortToNumerical(GPIO_Handle_t *pGPIOHandle)
 {
 
@@ -68,17 +65,14 @@ static GPIO_e MappingPortToNumerical(GPIO_Handle_t *pGPIOHandle)
 /*********************************************************************
  * @fn      		  - SYSCFG_EnableInterrupt
  *
- * @brief             - This function enables or disables interrupt line for a respective GPIO port
+ * @brief             - Enables the SYSCFG external interrupt line for a given GPIO pin (internal use).
  *
- * @param[in]         - base address of the gpio peripheral
- * @param[in]         - ENABLE or DISABLE macros
- * @param[in]         -
+ * @param[in]         - pGPIOHandle: Pointer to the GPIO handle structure.
  *
- * @return            -  none
+ * @return            - None
  *
- * @Note              -  none
-
- */
+ * @Note              - Used internally for GPIO interrupt configuration.
+ *********************************************************************/
 static void SYSCFG_EnableInterrupt(GPIO_Handle_t *pGPIOHandle)
 {
 	uint8_t PortResNum = pGPIOHandle->GPIO_PinConfig.GPIO_PinNumber/4;
@@ -97,17 +91,13 @@ static void SYSCFG_EnableInterrupt(GPIO_Handle_t *pGPIOHandle)
 /*********************************************************************
  * @fn      		  - GPIO_PeriClockControl
  *
- * @brief             - This function enables or disables peripheral clock for the given GPIO port
+ * @brief             - Enables or disables the peripheral clock for a given GPIO port.
  *
- * @param[in]         - base address of the gpio peripheral
- * @param[in]         - ENABLE or DISABLE macros
- * @param[in]         -
+ * @param[in]         - pGPIOx: Pointer to the GPIO port base address.
+ * @param[in]         - EnorDi: ENABLE or DISABLE macro.
  *
- * @return            -  none
- *
- * @Note              -  none
-
- */
+ * @return            - None
+ *********************************************************************/
 void GPIO_PeriClockControl(GPIO_RegDef_t *pGPIOx, uint8_t EnorDi)
 {
 	if (EnorDi == ENABLE)
@@ -208,19 +198,16 @@ void GPIO_PeriClockControl(GPIO_RegDef_t *pGPIOx, uint8_t EnorDi)
 /*********************************************************************
  * @fn      		  - GPIO_Init
  *
- * @brief             - This function is to initialize the a specific PIN of a GPIO port
+ * @brief             - Initializes a specific GPIO pin according to the configuration in the handle.
  *
- * @param[in]         - pointer to the GPIOx handler
- * @param[in]         -
- * @param[in]         -
+ * @param[in]         - pGPIOHandle: Pointer to the GPIO handle structure.
  *
- * @return            -  none
- *
- * @Note              -  none
-
- */
+ * @return            - None
+ *********************************************************************/
 void GPIO_Init(GPIO_Handle_t *pGPIOHandle)
 {
+	GPIO_PeriClockControl(pGPIOHandle->pGPIOx, ENABLE); // Enable clock
+
 	uint32_t Config1Bit = pGPIOHandle->GPIO_PinConfig.GPIO_PinNumber;
 	uint32_t Config2Bit = 2 * pGPIOHandle->GPIO_PinConfig.GPIO_PinNumber;
 
@@ -280,17 +267,12 @@ void GPIO_Init(GPIO_Handle_t *pGPIOHandle)
 /*********************************************************************
  * @fn      		  - GPIO_DeInit
  *
- * @brief             - This function is to deinitialize the GPIO port
+ * @brief             - Resets all registers of the specified GPIO port to their default values.
  *
- * @param[in]         - pointer to the GPIOx base address
- * @param[in]         -
- * @param[in]         -
+ * @param[in]         - pGPIOx: Pointer to the GPIO port base address.
  *
- * @return            -  none
- *
- * @Note              -  none
-
- */
+ * @return            - None
+ *********************************************************************/
 void GPIO_DeInit(GPIO_RegDef_t *pGPIOx)
 {
 	if (GPIOA == pGPIOx)
@@ -339,17 +321,47 @@ void GPIO_DeInit(GPIO_RegDef_t *pGPIOx)
 /*
  * Data read and write
  */
+/*********************************************************************
+ * @fn      		  - GPIO_ReadFromInputPin
+ *
+ * @brief             - Reads the value from a specific GPIO input pin.
+ *
+ * @param[in]         - pGPIOx: Pointer to the GPIO port base address.
+ * @param[in]         - PinNumber: Pin number to read.
+ *
+ * @return            - Value of the pin (0 or 1).
+ *********************************************************************/
 uint8_t GPIO_ReadFromInputPin(GPIO_RegDef_t *pGPIOx, uint8_t PinNumber)
 {
 	return (uint8_t)((pGPIOx->IDR >> PinNumber) & (uint32_t) 1);
 }
 
+/*********************************************************************
+ * @fn      		  - GPIO_ReadFromInputPort
+ *
+ * @brief             - Reads the value from the entire GPIO input port.
+ *
+ * @param[in]         - pGPIOx: Pointer to the GPIO port base address.
+ *
+ * @return            - 16-bit value representing all pins.
+ *********************************************************************/
 uint16_t GPIO_ReadFromInputPort(GPIO_RegDef_t *pGPIOx)
 {
 	return (uint16_t)(pGPIOx->IDR);
 
 }
 
+/*********************************************************************
+ * @fn      		  - GPIO_WriteToOutputPin
+ *
+ * @brief             - Sets or clears a specific GPIO output pin.
+ *
+ * @param[in]         - pGPIOx: Pointer to the GPIO port base address.
+ * @param[in]         - PinNumber: Pin number to write.
+ * @param[in]         - value: ENABLE (set) or DISABLE (clear).
+ *
+ * @return            - None
+ *********************************************************************/
 void GPIO_WriteToOutputPin(GPIO_RegDef_t *pGPIOx, uint8_t PinNumber, uint8_t value)
 {
 	if (ENABLE == value)
@@ -363,11 +375,31 @@ void GPIO_WriteToOutputPin(GPIO_RegDef_t *pGPIOx, uint8_t PinNumber, uint8_t val
 
 }
 
+/*********************************************************************
+ * @fn      		  - GPIO_WriteToOutputPort
+ *
+ * @brief             - Writes a 16-bit value to the entire GPIO output port.
+ *
+ * @param[in]         - pGPIOx: Pointer to the GPIO port base address.
+ * @param[in]         - value: 16-bit value to write.
+ *
+ * @return            - None
+ *********************************************************************/
 void GPIO_WriteToOutputPort(GPIO_RegDef_t *pGPIOx, uint16_t value)
 {
 	pGPIOx->ODR = value;
 }
 
+/*********************************************************************
+ * @fn      		  - GPIO_ToggleOutputPin
+ *
+ * @brief             - Toggles the state of a specific GPIO output pin.
+ *
+ * @param[in]         - pGPIOx: Pointer to the GPIO port base address.
+ * @param[in]         - PinNumber: Pin number to toggle.
+ *
+ * @return            - None
+ *********************************************************************/
 void GPIO_ToggleOutputPin(GPIO_RegDef_t *pGPIOx, uint8_t PinNumber)
 {
 
@@ -379,6 +411,16 @@ void GPIO_ToggleOutputPin(GPIO_RegDef_t *pGPIOx, uint8_t PinNumber)
 /*
  * IRQ Configuration and ISR handling
  */
+/*********************************************************************
+ * @fn      		  - GPIO_IRQInterruptConfig
+ *
+ * @brief             - Enables or disables a given IRQ number in the NVIC for GPIO interrupts.
+ *
+ * @param[in]         - IRQNumber: IRQ number to configure.
+ * @param[in]         - EnorDi: ENABLE or DISABLE macro.
+ *
+ * @return            - None
+ *********************************************************************/
 void GPIO_IRQInterruptConfig(uint8_t IRQNumber, uint8_t EnorDi)
 {
 	if (ENABLE == EnorDi)
@@ -422,6 +464,16 @@ void GPIO_IRQInterruptConfig(uint8_t IRQNumber, uint8_t EnorDi)
 
 }
 
+/*********************************************************************
+ * @fn      		  - GPIO_IRQPriorityConfig
+ *
+ * @brief             - Sets the priority of a given IRQ number in the NVIC.
+ *
+ * @param[in]         - IRQNumber: IRQ number to configure.
+ * @param[in]         - Priority: Priority value.
+ *
+ * @return            - None
+ *********************************************************************/
 void GPIO_IRQPriorityConfig (uint8_t IRQNumber, uint32_t Priority)
 {
 	//1. first lets find out the ipr register
@@ -433,6 +485,15 @@ void GPIO_IRQPriorityConfig (uint8_t IRQNumber, uint32_t Priority)
 	*(  NVIC_PR_BASE_ADDR + iprx ) |=  ( Priority << shift_amount );
 }
 
+/*********************************************************************
+ * @fn      		  - GPIO_IRQHandling
+ *
+ * @brief             - Clears the interrupt pending bit for a given GPIO pin.
+ *
+ * @param[in]         - PinNumber: Pin number for which to clear the interrupt.
+ *
+ * @return            - None
+ *********************************************************************/
 void GPIO_IRQHandling(uint8_t PinNumber)
 {
 	// clear the EXTI->PR pending int
@@ -445,6 +506,22 @@ void GPIO_IRQHandling(uint8_t PinNumber)
 /*
  * Configuration
  */
+/*********************************************************************
+ * @fn      		  - GPIO_Config
+ *
+ * @brief             - Fills a GPIO handle structure with configuration parameters for a pin.
+ *
+ * @param[in]         - pGPIOHandle: Pointer to the GPIO handle structure.
+ * @param[in]         - port: GPIO port base address.
+ * @param[in]         - pin: Pin number.
+ * @param[in]         - mode: Pin mode.
+ * @param[in]         - speed: Output speed.
+ * @param[in]         - pupd: Pull-up/pull-down configuration.
+ * @param[in]         - optype: Output type.
+ * @param[in]         - altmode: Alternate function mode.
+ *
+ * @return            - None
+ *********************************************************************/
 void GPIO_Config(GPIO_Handle_t *pGPIOHandle, GPIO_RegDef_t *port, uint8_t pin, uint8_t mode, uint8_t speed, uint8_t pupd, uint8_t optype, uint8_t altmode)
 {
 	pGPIOHandle->pGPIOx = port;
