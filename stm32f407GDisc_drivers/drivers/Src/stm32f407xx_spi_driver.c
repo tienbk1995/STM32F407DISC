@@ -14,9 +14,8 @@
  *
  * @brief             - This function is enable/disable SPI clock
  *
- * @param[in]         - none
- * @param[in]         - none
- * @param[in]         -
+ * @param[in]         - pSPIx: SPI peripheral base address
+ * @param[in]         - EnorDi: ENABLE or DISABLE
  *
  * @return            -  none
  *
@@ -66,9 +65,7 @@ void SPI_PeriClockControl(SPI_RegDef_t *pSPIx, uint8_t EnorDi)
  *
  * @brief             - This function is to initialize the HW SPI driver
  *
- * @param[in]         - none
- * @param[in]         - none
- * @param[in]         -
+ * @param[in]         - pSPIHandle: SPI handle structure
  *
  * @return            -  none
  *
@@ -120,9 +117,7 @@ void SPI_HWInit(SPI_Handle_t *pSPIHandle)
  *
  * @brief             - This function is to de-init HW
  *
- * @param[in]         - none
- * @param[in]         - none
- * @param[in]         -
+ * @param[in]         - pSPIHandle: SPI handle structure
  *
  * @return            -  none
  *
@@ -142,9 +137,9 @@ void SPI_HWDeInit(SPI_Handle_t *pSPIHandle)
  *
  * @brief             - This function is to send data buffer
  *
- * @param[in]         - none
- * @param[in]         - none
- * @param[in]         -
+ * @param[in]         - pSPIHandle: SPI handle structure
+ * @param[in]         - pTxBuffer: Transmit buffer pointer
+ * @param[in]         - Length: Length of data to be sent
  *
  * @return            -  none
  *
@@ -177,9 +172,9 @@ void SPI_SendData(SPI_Handle_t *pSPIHandle, void *pTxBuffer, uint32_t Length)
  *
  * @brief             - This function is to receive data
  *
- * @param[in]         - none
- * @param[in]         - none
- * @param[in]         -
+ * @param[in]         - pSPIx: SPI peripheral base address
+ * @param[in]         - pRxBuffer: Pointer to the receive buffer
+ * @param[in]         - Length: Length of data to be received
  *
  * @return            -  none
  *
@@ -216,7 +211,7 @@ void SPI_ReceiveData(SPI_RegDef_t *pSPIx, uint8_t *pRxBuffer, uint32_t Length)
 /*********************************************************************
  * @fn      		  - SPI_IRQInterruptConfig
  *
- * @brief             - This function is to configure spi interrupt
+ * @brief             - This function is to configure SPI interrupt
  *
  * @param[in]         - none
  * @param[in]         - none
