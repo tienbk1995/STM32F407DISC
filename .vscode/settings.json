@@ -1,5 +1,7 @@
 {
     "files.associations": {
-        "software_delay.h": "c"
+        "*.can": "cpp",
+        "software_delay.h": "c",
+        "stm32f407xx.h": "c"
     }
 }

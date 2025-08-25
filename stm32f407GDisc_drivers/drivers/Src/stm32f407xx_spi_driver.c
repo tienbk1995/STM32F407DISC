@@ -188,7 +188,26 @@ void SPI_SendData(SPI_Handle_t *pSPIHandle, void *pTxBuffer, uint32_t Length)
  */
 void SPI_ReceiveData(SPI_RegDef_t *pSPIx, uint8_t *pRxBuffer, uint32_t Length)
 {
+	while (Length > 0)
+	{
+		// Wait until RXNE is set (data received)
+		while (SPI_GETFLAGSTATUS(pSPIx->SR, SPI_RXNE_FLAG) == SPI_RESET);
 
+		if (SPI_GETDFFTYPE((pSPIx->CR1 >> SPI_CR1_DFF) & 0x1) == SPI_DFF_8BITS)
+		{
+			// 8-bit data
+			*pRxBuffer = (uint8_t)pSPIx->DR;
+			pRxBuffer++;
+			Length--;
+		}
+		else
+		{
+			// 16-bit data
+			*((uint16_t*)pRxBuffer) = (uint16_t)pSPIx->DR;
+			pRxBuffer += 2;
+			Length -= 2;
+		}
+	}
 }
 
 /*
