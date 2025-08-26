@@ -97,7 +97,7 @@ void SPI_HWDeInit(SPI_Handle_t *pSPIHandle);
  * Communication
  */
 void SPI_SendData(SPI_Handle_t *pSPIHandle, void *pTxBuffer, uint32_t Length);
-void SPI_ReceiveData(SPI_RegDef_t *pSPIx, uint8_t *pRxBuffer, uint32_t Length);
+void SPI_ReceiveData(SPI_Handle_t *pSPIHandle, uint8_t *pRxBuffer, uint32_t Length);
 
 /*
  * IRQ Configuration and ISR handling

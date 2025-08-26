@@ -121,12 +121,29 @@ void SPI_HWInit(SPI_Handle_t *pSPIHandle)
  *
  * @return            -  none
  *
- * @Note              -  none
+ * @Note              -  corresponding RCC reset bits must be set before clearing
 
  */
 void SPI_HWDeInit(SPI_Handle_t *pSPIHandle)
 {
-
+    if (pSPIHandle->pSPIx == SPI1)
+    {
+        // Reset SPI1 using RCC
+        RCC->APB2RSTR |= (1 << 12);
+        RCC->APB2RSTR &= ~(1 << 12);
+    }
+    else if (pSPIHandle->pSPIx == SPI2)
+    {
+        // Reset SPI2 using RCC
+        RCC->APB1RSTR |= (1 << 14);
+        RCC->APB1RSTR &= ~(1 << 14);
+    }
+    else if (pSPIHandle->pSPIx == SPI3)
+    {
+        // Reset SPI3 using RCC
+        RCC->APB1RSTR |= (1 << 15);
+        RCC->APB1RSTR &= ~(1 << 15);
+    }
 }
 
 /*
@@ -181,24 +198,24 @@ void SPI_SendData(SPI_Handle_t *pSPIHandle, void *pTxBuffer, uint32_t Length)
  * @Note              -  none
 
  */
-void SPI_ReceiveData(SPI_RegDef_t *pSPIx, uint8_t *pRxBuffer, uint32_t Length)
+void SPI_ReceiveData(SPI_Handle_t *pSPIHandle, uint8_t *pRxBuffer, uint32_t Length)
 {
 	while (Length > 0)
 	{
 		// Wait until RXNE is set (data received)
-		while (SPI_GETFLAGSTATUS(pSPIx->SR, SPI_RXNE_FLAG) == SPI_RESET);
+		while (SPI_GETFLAGSTATUS(pSPIHandle->pSPIx->SR, SPI_RXNE_FLAG) == SPI_RESET);
 
-		if (SPI_GETDFFTYPE((pSPIx->CR1 >> SPI_CR1_DFF) & 0x1) == SPI_DFF_8BITS)
+		if (SPI_GETDFFTYPE((pSPIHandle->pSPIx->CR1 >> SPI_CR1_DFF) & 0x1) == SPI_DFF_8BITS)
 		{
 			// 8-bit data
-			*pRxBuffer = (uint8_t)pSPIx->DR;
+			*pRxBuffer = (uint8_t)pSPIHandle->pSPIx->DR;
 			pRxBuffer++;
 			Length--;
 		}
 		else
 		{
 			// 16-bit data
-			*((uint16_t*)pRxBuffer) = (uint16_t)pSPIx->DR;
+			*((uint16_t*)pRxBuffer) = (uint16_t)pSPIHandle->pSPIx->DR;
 			pRxBuffer += 2;
 			Length -= 2;
 		}

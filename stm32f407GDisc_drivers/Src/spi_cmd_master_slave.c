@@ -160,7 +160,7 @@ int main(void)
             // Handle NACK scenario (optional)
         }
         // Wait until SPI is not busy
-        while (SPI_GETFLAGSTATUS(pSPI2Handle, SPI_BUSY_FLAG));
+        while (SPI_GETFLAGSTATUS(pSPI2Handle->pSPIx->SR, SPI_BUSY_FLAG));
         // Disable the SPI peripheral
         SPI_PeripheralControl(pSPI2Handle, DISABLE);
 	}
