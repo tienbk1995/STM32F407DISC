@@ -160,23 +160,27 @@ void SPI_HWDeInit(SPI_Handle_t *pSPIHandle)
  *
  * @return            -  none
  *
- * @Note              -  none
+ * @Note              -  This is a blocking call, polling technique
 
  */
 void SPI_SendData(SPI_Handle_t *pSPIHandle, void *pTxBuffer, uint32_t Length)
 {
 	while (Length > 0)
 	{
+		// Wait until TXE is set (transmit buffer empty)
 		while (SPI_GETFLAGSTATUS(pSPIHandle->pSPIx->SR, SPI_TXE_FLAG) == SPI_RESET);
-		if (SPI_DFF_8BITS == SPI_GETDFFTYPE(pSPIHandle->SPIConfig.SPI_DFF)) // 8 Bit data load
+
+		if (SPI_DFF_8BITS == SPI_GETDFFTYPE(pSPIHandle->SPIConfig.SPI_DFF)) // 8 Bit data loaded
 		{
-			pSPIHandle->pSPIx->DR = *(uint8_t *)pTxBuffer;
-			Length -= 1;
+			pSPIHandle->pSPIx->DR = *(uint8_t *)pTxBuffer; // Read data from local buffer
+			Length -= 1; // Decrement length
+			pTxBuffer++; // Increment buffer pointer
 		}
-		else // 16 Bit data load
+		else // 16 Bit data loaded
 		{
-			pSPIHandle->pSPIx->DR = *(uint16_t *)pTxBuffer;
-			Length -= 2;
+			pSPIHandle->pSPIx->DR = *(uint16_t *)pTxBuffer; // Read data from local buffer
+			Length -= 2; // Decrement length
+			pTxBuffer += 2; // Increment buffer pointer
 		}
 	}
 }
@@ -195,7 +199,7 @@ void SPI_SendData(SPI_Handle_t *pSPIHandle, void *pTxBuffer, uint32_t Length)
  *
  * @return            -  none
  *
- * @Note              -  none
+ * @Note              -  This is a blocking call, polling technique
 
  */
 void SPI_ReceiveData(SPI_Handle_t *pSPIHandle, uint8_t *pRxBuffer, uint32_t Length)
@@ -207,17 +211,17 @@ void SPI_ReceiveData(SPI_Handle_t *pSPIHandle, uint8_t *pRxBuffer, uint32_t Leng
 
 		if (SPI_GETDFFTYPE((pSPIHandle->pSPIx->CR1 >> SPI_CR1_DFF) & 0x1) == SPI_DFF_8BITS)
 		{
-			// 8-bit data
-			*pRxBuffer = (uint8_t)pSPIHandle->pSPIx->DR;
-			pRxBuffer++;
-			Length--;
+			// 8-bit data loaded
+			*pRxBuffer = (uint8_t)pSPIHandle->pSPIx->DR; // Read data from SPI data register
+			pRxBuffer++; // Increment buffer pointer
+			Length--; // Decrement length
 		}
 		else
 		{
-			// 16-bit data
-			*((uint16_t*)pRxBuffer) = (uint16_t)pSPIHandle->pSPIx->DR;
-			pRxBuffer += 2;
-			Length -= 2;
+			// 16-bit data loaded
+			*((uint16_t*)pRxBuffer) = (uint16_t)pSPIHandle->pSPIx->DR; // Read data from SPI data register
+			pRxBuffer += 2; // Increment buffer pointer
+			Length -= 2; // Decrement length
 		}
 	}
 }
@@ -310,5 +314,30 @@ void SPI_PeripheralControl(SPI_Handle_t *pSPIHandle, uint8_t EnorDi)
     else
     {
         pSPIHandle->pSPIx->CR1 &= ~(uint32_t)(1 << SPI_CR1_SPE);
+    }
+}
+
+
+/*********************************************************************
+ * @fn       - SPI_SSOEConfig
+ *
+ * @brief    - Configures the SSOE (Slave Select Output Enable) setting for the SPI peripheral.
+ *
+ * @param[in]  - pSPIHandle: Pointer to the SPI handle structure.
+ * @param[in]  - EnorDi: ENABLE or DISABLE macro.
+ *
+ * @return   - none
+ *
+ * @Note     - When SSOE is enabled and the SPI is in master mode, the NSS pin is managed automatically by hardware.
+ *********************************************************************/
+void SPI_SSOEConfig(SPI_Handle_t *pSPIHandle, uint8_t EnorDi)
+{
+    if (EnorDi == ENABLE)
+    {
+        pSPIHandle->pSPIx->CR2 |= (uint32_t)(1 << SPI_CR2_SSOE);
+    }
+    else
+    {
+        pSPIHandle->pSPIx->CR2 &= ~(uint32_t)(1 << SPI_CR2_SSOE);
     }
 }

@@ -1,3 +1,4 @@
+
 /*
  * stm32f407xx_spi_driver.h
  *
@@ -65,13 +66,13 @@
 /* Configuration SPI */
 typedef struct
 {
-	uint8_t SPI_DeviceMode;
-	uint8_t SPI_BusConfig;
-	uint8_t SPI_SclkSpeed;
-	uint8_t SPI_DFF;
-	uint8_t SPI_CPOL;
-	uint8_t SPI_CPHA;
-	uint8_t SPI_SSM;
+	uint8_t SPI_DeviceMode;   /* Specifies master or slave mode. Use SPI_DEVICE_MODE_MASTER or SPI_DEVICE_MODE_SLAVE */
+	uint8_t SPI_BusConfig;    /* Specifies bus configuration: full-duplex, half-duplex, or simplex RX. Use SPI_BUS_CONFIG_* macros */
+	uint8_t SPI_SclkSpeed;    /* Specifies SPI serial clock speed. Use SPI_SCLK_SPEED_DIV* macros */
+	uint8_t SPI_DFF;          /* Specifies data frame format: 8 or 16 bits. Use SPI_DFF_* macros */
+	uint8_t SPI_CPOL;         /* Specifies clock polarity. Use SPI_CPOL_LOW or SPI_CPOL_HIGH */
+	uint8_t SPI_CPHA;         /* Specifies clock phase. Use SPI_CPHA_LOW or SPI_CPHA_HIGH */
+	uint8_t SPI_SSM;          /* Specifies software slave management: enabled or disabled. Use SPI_SSM_EN or SPI_SSM_DI */
 } SPI_Config_t;
 
 /* SPI handler */
@@ -111,5 +112,9 @@ void SPI_IRQHandling(SPI_Handle_t *pHandle);
  */
 void SPI_PeripheralControl(SPI_Handle_t *pSPIHandle, uint8_t EnorDi);
 
+/*
+ * SSOE (Slave Select Output Enable) configuration
+ */
+void SPI_SSOEConfig(SPI_Handle_t *pSPIHandle, uint8_t EnorDi);
 
 #endif /* INC_STM32F407XX_SPI_DRIVER_H_ */
