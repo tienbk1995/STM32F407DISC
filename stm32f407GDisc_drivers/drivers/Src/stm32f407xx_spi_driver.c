@@ -96,7 +96,7 @@ void SPI_HWInit(SPI_Handle_t *pSPIHandle)
 		reg_value |= (1 << SPI_CR1_RXONLY);
 	}
 	// Baudrate config
-	reg_value |= pSPIHandle->SPIConfig.SPI_SclkSpeed << SPI_SCLK_SPEED_DIV16;
+	reg_value |= pSPIHandle->SPIConfig.SPI_SclkSpeed << SPI_CR1_BR;
 	// DFF configure
 	reg_value |= pSPIHandle->SPIConfig.SPI_DFF << SPI_CR1_DFF;
 	// CPOL
@@ -307,8 +307,6 @@ void SPI_PeripheralControl(SPI_Handle_t *pSPIHandle, uint8_t EnorDi)
 {
     if (EnorDi == ENABLE)
     {
-		pSPIHandle->pSPIx->CR1 |= (uint32_t)(1 << SPI_CR1_SSI);
-
         pSPIHandle->pSPIx->CR1 |= (uint32_t)(1 << SPI_CR1_SPE);
     }
     else
@@ -339,5 +337,29 @@ void SPI_SSOEConfig(SPI_Handle_t *pSPIHandle, uint8_t EnorDi)
     else
     {
         pSPIHandle->pSPIx->CR2 &= ~(uint32_t)(1 << SPI_CR2_SSOE);
+    }
+}
+
+/*********************************************************************
+ * @fn      		  - SPI_SSIConfig
+ *
+ * @brief             - Configures the SSI (Internal Slave Select) bit for the SPI peripheral.
+ *
+ * @param[in]         - pSPIHandle: Pointer to the SPI handle structure.
+ * @param[in]         - EnOrDi: ENABLE or DISABLE macro.
+ *
+ * @return            - None
+ *
+ * @Note              - When Software Slave Management (SSM) is enabled, the SSI bit simulates the NSS signal.
+ *                      In master mode, SSI must be set (ENABLE) to allow SPI operation; otherwise, the SPI peripheral will disable itself.
+ *********************************************************************/
+void  SPI_SSIConfig(SPI_Handle_t *pSPIHandle, uint8_t EnOrDi)
+{
+    if(EnOrDi == ENABLE)
+    {
+        pSPIHandle->pSPIx->CR1 |=  (1 << SPI_CR1_SSI);
+    }else
+    {
+        pSPIHandle->pSPIx->CR1 &=  ~(1 << SPI_CR1_SSI);
     }
 }

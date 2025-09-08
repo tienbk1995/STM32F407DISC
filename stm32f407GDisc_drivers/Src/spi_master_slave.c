@@ -25,38 +25,22 @@
   #warning "FPU is not initialized, but the project is compiling for an FPU. Please initialize the FPU before use."
 #endif
 /*
+    STM32F407 Discovery Board
     PB14 (SPI2_MISO)
     PB15 (SPI2_MOSI)
     PB13 (SPI2_SCK)
-    PA4  (SPI2_NSS)
+    PB12  (SPI2_NSS)
 */
 
 /*
- * Command definitions for SPI communication
- */
-#define COMMAND_LED_CTRL        0x50
-#define COMMAND_SENSOR_READ     0x51
-#define COMMAND_LED_READ        0x52
-#define COMMAND_PRINT           0x53
-#define COMMAND_ID_READ         0x54
+    ESP32 Slave
+    GPIO19 (SPI2_MISO)
+    GPIO23 (SPI2_MOSI)
+    GPIO18 (SPI2_SCK)
+    GPIO5  (SPI2_NSS)
+*/
 
-/*
- * LED control commands
- */
-#define LED_ON                   1
-#define LED_OFF                  0
 
-/*
- * Analog pin definitions
- */
-#define ANALOG_PIN0              0
-#define ANALOG_PIN1              1
-#define ANALOG_PIN2              2
-#define ANALOG_PIN3              3
-#define ANALOG_PIN4              4
-
-#define LED_PIN                  9
-#define ACK_BYTE                 0xF5
 
 void SPI2_GPIO_Init(void)
 {
@@ -76,9 +60,10 @@ void SPI2_GPIO_Init(void)
     spiPIN.GPIO_PinConfig.GPIO_PinNumber = GPIO_PIN_NO_15;
     GPIO_Init(&spiPIN);
 
-    // MISO
+    /* MISO
     spiPIN.GPIO_PinConfig.GPIO_PinNumber = GPIO_PIN_NO_14;
     GPIO_Init(&spiPIN);
+    */
 
     // NSS
     spiPIN.GPIO_PinConfig.GPIO_PinNumber = GPIO_PIN_NO_12;
@@ -106,62 +91,44 @@ void GPIO_Button_Init(GPIO_Handle_t *pButtonHandle)
 {
     GPIO_Config(pButtonHandle, GPIOA, GPIO_PIN_NO_0, GPIO_MODE_IN, GPIO_SPEED_FAST, GPIO_OP_TYPE_OD, GPIO_NO_PUPD, 0);
     GPIO_Init(pButtonHandle);
+    // Enable clock for button GPIO port
+    GPIO_PeriClockControl(pButtonHandle->pGPIOx, ENABLE);
 }
 
-uint8_t SPIResp_Verification(uint8_t ack_data)
-{
-    if (ack_data == ACK_BYTE)
-    {
-        return 1; // Acknowledged
-    }
-    return 0; // Not acknowledged
-}
 
 int main(void)
 {
+    // Initialize variables
     GPIO_Handle_t button;
     SPI_Handle_t *pSPI2Handle = calloc(1, sizeof(SPI_Handle_t));
-    uint8_t commandcode = COMMAND_LED_CTRL;
-    uint8_t ack_data = 0x00;
-    uint8_t dummy_write_data = 0xFF;
-    uint8_t dummy_read_data = 0x00;
-    uint8_t arg_cmd_au8[2] = {LED_PIN, LED_ON};
+    uint8_t master_data[] = "hello world";
+    uint8_t length = sizeof(master_data);
 
-
-
-    // Initialize GPIO and SPI for SPI2
+    // Initialize GPIO pin and SPI for SPI2
     SPI2_GPIO_Init();
     SPI2_Init(pSPI2Handle);
 
+    SPI_SSOEConfig(pSPI2Handle, ENABLE); // Enable SSOE for NSS pin management
+
+    // Initialize button GPIO
     GPIO_Button_Init(&button);
+
 
     /* Loop forever */
 	while(1)
-	{
-       while (!GPIO_ReadFromInputPin(GPIOA, GPIO_PIN_NO_0)); // wait for button press
-       SoftwareDelay(200); // delay 200 ticks
-       SPI_PeripheralControl(pSPI2Handle, ENABLE);
-       // Send command code
-       SPI_SendData(pSPI2Handle, &commandcode, 1);
-       // Receive to clear off RXNE after sending the command code
-       SPI_ReceiveData(pSPI2Handle, &dummy_read_data, 1);
-       // Send dummy data to fetch the ACK response from slave (shift register)
-       SPI_SendData(pSPI2Handle, &dummy_write_data, 1);
-       // Reception the ack byte
-       SPI_ReceiveData(pSPI2Handle, &ack_data, 1);
-       // Verify the ack byte
-       if (SPIResp_Verification(ack_data)) // if acknowledged
-       {
-           // Send a LED ON command
-           SPI_SendData(pSPI2Handle, &arg_cmd_au8, 2);
-       }
-       else
-       {
-           // Handle NACK scenario (optional)
-       }
-       // Wait until SPI is not busy
-       while (SPI_GETFLAGSTATUS(pSPI2Handle->pSPIx->SR, SPI_BUSY_FLAG));
-       // Disable the SPI peripheral
-       SPI_PeripheralControl(pSPI2Handle, DISABLE);
-	}
+    {
+        // Wait until button is pressed
+        while (!GPIO_ReadFromInputPin(button.pGPIOx, button.GPIO_PinConfig.GPIO_PinNumber));
+        SoftwareDelay(200); // Debounce delay
+        // Enable SPI2 peripheral
+        SPI_PeripheralControl(pSPI2Handle, ENABLE);
+        // Send length of data to slave
+        SPI_SendData(pSPI2Handle, &length, 1);
+        // Send data to slave
+        SPI_SendData(pSPI2Handle, master_data, sizeof(master_data));
+        // Wait until SPI is not busy
+        while (SPI_GETFLAGSTATUS(pSPI2Handle->pSPIx->SR, SPI_BUSY_FLAG));
+        // Disable the SPI peripheral
+        SPI_PeripheralControl(pSPI2Handle, DISABLE);
+    }
 }

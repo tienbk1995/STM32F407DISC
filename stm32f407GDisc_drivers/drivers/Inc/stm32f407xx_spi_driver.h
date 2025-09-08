@@ -59,7 +59,7 @@
 /*
  * SPI macro functions
  */
-#define SPI_GETFLAGSTATUS(SPIx_SR, flag_name) ((SPIx_SR & (1 << flag_name)) ? SPI_SET : SPI_RESET)
+#define SPI_GETFLAGSTATUS(SPIx_SR, flag_name) ((SPIx_SR & flag_name) ? SPI_SET : SPI_RESET)
 #define SPI_GETDFFTYPE(SPIx_DFF_TYPE) ((SPIx_DFF_TYPE == SPI_DFF_8BITS) ? SPI_DFF_8BITS : SPI_DFF_16BITS)
 
 /********************************************** Typedef definition ***********************************************/
@@ -116,5 +116,10 @@ void SPI_PeripheralControl(SPI_Handle_t *pSPIHandle, uint8_t EnorDi);
  * SSOE (Slave Select Output Enable) configuration
  */
 void SPI_SSOEConfig(SPI_Handle_t *pSPIHandle, uint8_t EnorDi);
+
+/*
+ * SSOE (Slave Select Output Enable) configuration
+ */
+void SPI_SSIConfig(SPI_Handle_t *pSPIHandle, uint8_t EnOrDi);
 
 #endif /* INC_STM32F407XX_SPI_DRIVER_H_ */
