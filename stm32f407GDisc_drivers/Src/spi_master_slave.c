@@ -29,7 +29,7 @@
     PB14 (SPI2_MISO)
     PB15 (SPI2_MOSI)
     PB13 (SPI2_SCK)
-    PB12  (SPI2_NSS)
+    PB12 (SPI2_NSS)
 */
 
 /*
@@ -76,7 +76,7 @@ void SPI2_Init(SPI_Handle_t *pSPI2Handle)
     pSPI2Handle->pSPIx = SPI2;
     pSPI2Handle->SPIConfig.SPI_DeviceMode = SPI_DEVICE_MODE_MASTER;
     pSPI2Handle->SPIConfig.SPI_BusConfig = SPI_BUS_CONFIG_FULLDUPLEX;
-    pSPI2Handle->SPIConfig.SPI_SclkSpeed = SPI_SCLK_SPEED_DIV8; // 2MHz
+    pSPI2Handle->SPIConfig.SPI_SclkSpeed = SPI_SCLK_SPEED_DIV32; // 2MHz
     pSPI2Handle->SPIConfig.SPI_DFF = SPI_DFF_8BITS;
     pSPI2Handle->SPIConfig.SPI_CPOL = SPI_CPOL_LOW;
     pSPI2Handle->SPIConfig.SPI_CPHA = SPI_CPHA_LOW;
@@ -101,13 +101,18 @@ int main(void)
     // Initialize variables
     GPIO_Handle_t button;
     SPI_Handle_t *pSPI2Handle = calloc(1, sizeof(SPI_Handle_t));
-    uint8_t master_data[] = "hello world";
+    uint8_t master_data[] = {1,2,3,4,5};
     uint8_t length = sizeof(master_data);
 
     // Initialize GPIO pin and SPI for SPI2
     SPI2_GPIO_Init();
     SPI2_Init(pSPI2Handle);
-
+    /*
+	* making SSOE 1 does NSS output enable.
+	* The NSS pin is automatically managed by the hardware.
+	* i.e when SPE=1 , NSS will be pulled to low
+	* and NSS pin will be high when SPE=0
+	*/
     SPI_SSOEConfig(pSPI2Handle, ENABLE); // Enable SSOE for NSS pin management
 
     // Initialize button GPIO
@@ -119,16 +124,17 @@ int main(void)
     {
         // Wait until button is pressed
         while (!GPIO_ReadFromInputPin(button.pGPIOx, button.GPIO_PinConfig.GPIO_PinNumber));
-        SoftwareDelay(200); // Debounce delay
+        SoftwareDelay(300); // Debounce delay
         // Enable SPI2 peripheral
         SPI_PeripheralControl(pSPI2Handle, ENABLE);
-        // Send length of data to slave
-        SPI_SendData(pSPI2Handle, &length, 1);
         // Send data to slave
         SPI_SendData(pSPI2Handle, master_data, sizeof(master_data));
         // Wait until SPI is not busy
         while (SPI_GETFLAGSTATUS(pSPI2Handle->pSPIx->SR, SPI_BUSY_FLAG));
         // Disable the SPI peripheral
         SPI_PeripheralControl(pSPI2Handle, DISABLE);
+        // Wait until button is released
+        while (GPIO_ReadFromInputPin(button.pGPIOx, button.GPIO_PinConfig.GPIO_PinNumber));
+        SoftwareDelay(300); // Debounce delay
     }
 }
