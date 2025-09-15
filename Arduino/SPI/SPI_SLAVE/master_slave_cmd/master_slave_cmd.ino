@@ -49,77 +49,113 @@
 #define LED_PIN                  9
 #define ACK_BYTE                 0xF5
 
+// State machine to track SPI transaction states
+enum SpiState {
+  WAITING_FOR_COMMAND,
+  READY_TO_SEND_ACK,
+  WAITING_FOR_ARGS
+};
 
 ESP32SPISlave slave;
 
-static constexpr size_t BUFFER_SIZE = 1;
-static constexpr size_t QUEUE_SIZE = 1;
-size_t received_bytes = 0;
+static constexpr size_t BUFFER_SIZE = 32;
+static constexpr size_t QUEUE_SIZE = 4;
+
+SpiState currentState = WAITING_FOR_COMMAND;
 uint8_t tx_buf[BUFFER_SIZE]; // Slave transmit
 uint8_t rx_buf[BUFFER_SIZE];// Slave receive (from Master)
 
+/* Main setup*/
 void setup()
 {
-    Serial.begin(115200);
+  pinMode(PIN_SS, INPUT_PULLUP);  // Add pull-up to SS pin
 
-    delay(2000);
+  // Start serial for debug output
+  Serial.begin(115200);
+  delay(2000);
 
-    slave.setDataMode(SPI_MODE0);   // default: SPI_MODE0
-    slave.setQueueSize(1); // default: 1
+  // clear tx/rx buffers initially
+  clearBuffers(tx_buf, BUFFER_SIZE);
+  clearBuffers(rx_buf, BUFFER_SIZE);
+  // initialize tx/rx buffers
+  initializeBuffers(tx_buf, rx_buf, BUFFER_SIZE, 0, 256);
 
-    // begin() after setting
-    slave.begin(VSPI, PIN_SCK, PIN_MISO, PIN_MOSI, PIN_SS);
+  // set SPI parameters
+  slave.setDataMode(SPI_MODE0);   // default: SPI_MODE0
+  slave.setQueueSize(QUEUE_SIZE); // default: 1
 
-    Serial.println("start spi slave");
+  // begin() after setting
+  slave.begin(VSPI, PIN_SCK, PIN_MISO, PIN_MOSI, PIN_SS);
+  Serial.println("start spi slave");
 }
 
 void loop()
 {
-    // initialize tx/rx buffers
-    initializeBuffers(tx_buf, rx_buf, BUFFER_SIZE, 0, 256);
 
-    // start and wait to complete one BIG transaction (same data will be received from slave)
-    received_bytes = slave.transfer(tx_buf, rx_buf, BUFFER_SIZE);
-    printf("number of received bytes: %d\n ", received_bytes);
+size_t received_bytes = 0;
 
+  // Add to loop() before the switch statement
+if (digitalRead(PIN_SS) == LOW) {
+  Serial.println("SS pin is LOW - STM32 is trying to communicate");
+}
 
-    // verify and dump difference with received data
-
-    /*if (verifyAndDumpDifference("slave", tx_buf, BUFFER_SIZE, "master", rx_buf, received_bytes)) {
-         Serial.println("successfully received expected data from master");
-     } else {
-         Serial.println("unexpected difference found between master/slave data");
-    } */
-    if (received_bytes)
-    {
-
-      for (size_t i = 0; i < received_bytes; i++) 
-      {
-          printf("data %d:%02X\n ", i, rx_buf[i]);
-      }
-
-      if (received_bytes == 1)
-      {
-        if (COMMAND_LED_CTRL == rx_buf[0])
-        {
-          tx_buf[0] = ACK_BYTE;
-          printf("ACK sent\n");
-        }
-        else
-        {
-          printf("Corrupted Data\n");
+  // Process based on current state
+  switch(currentState) {
+    case WAITING_FOR_COMMAND:
+      // Wait for command from master
+      received_bytes = slave.transfer(tx_buf, rx_buf, 1);
+      
+      if (received_bytes == 1) {
+        Serial.printf("Received command: 0x%02X\n", rx_buf[0]);
+        
+        // Check if valid command
+        if (rx_buf[0] == COMMAND_LED_CTRL) {
+          // Prepare to send ACK
+          currentState = READY_TO_SEND_ACK;
+          Serial.println("Valid command, ready to send ACK");
+        } else {
+          Serial.println("Invalid command");
         }
       }
-      else if (received_bytes == 2)
-      {
-        printf("LED[%d] is :%d\n ", rx_buf[0], rx_buf[1]);
+      break;
+      
+    case READY_TO_SEND_ACK:
+      // Send ACK to master
+      tx_buf[0] = ACK_BYTE; // Ensure ACK is set
+      received_bytes = slave.transfer(tx_buf, rx_buf, 1);
+      
+      if (received_bytes == 1) {
+        Serial.printf("Sent ACK, received dummy: 0x%02X\n", rx_buf[0]);
+        currentState = WAITING_FOR_ARGS;
       }
-    }
-    else
-    {
-      printf("Transmission failed\n");
-    }
-    
-    clearBuffers(tx_buf, BUFFER_SIZE);
-    clearBuffers(rx_buf, BUFFER_SIZE);
+      else{
+        Serial.println("Unresponsive master");
+      }
+      break;
+      
+    case WAITING_FOR_ARGS:
+      // Receive LED arguments
+      received_bytes = slave.transfer(tx_buf, rx_buf, 2);
+      
+      if (received_bytes == 2) {
+        Serial.printf("LED Pin: %d, State: %d\n", rx_buf[0], rx_buf[1]);
+        
+        // Process LED command
+        if (rx_buf[0] == LED_PIN) {
+          if (rx_buf[1] == LED_ON) {
+            Serial.println("LED ON command received");
+            // Implement actual LED control here if needed
+          } else {
+            Serial.println("LED OFF command received");
+            // Implement actual LED control here if needed
+          }
+        }
+        
+        // Reset to wait for new command
+        currentState = WAITING_FOR_COMMAND;
+      }
+      break;
+  }
+  // Small delay to prevent tight loops
+  delay(1);
 }

@@ -161,14 +161,20 @@ int main(void)
         SoftwareDelay(300); // delay 300 ticks
         // Enable the SPI peripheral
         SPI_PeripheralControl(pSPI2Handle, ENABLE);
+
         // Send command code
         SPI_SendData(pSPI2Handle, &commandcode, 1);
         // Receive to clear off RXNE after sending the command code
         SPI_ReceiveData(pSPI2Handle, &dummy_read_data, 1);
+        
+        // Wait a brief moment for slave to prepare response
+        SoftwareDelay(10);
+
         // Send dummy data to fetch the ACK response from slave (shift register)
         SPI_SendData(pSPI2Handle, &dummy_write_data, 1);
         // Reception the ack byte
         SPI_ReceiveData(pSPI2Handle, &ack_data, 1);
+
         // Verify the ack byte
         if (SPIResp_Verification(ack_data)) // if acknowledged
         {
