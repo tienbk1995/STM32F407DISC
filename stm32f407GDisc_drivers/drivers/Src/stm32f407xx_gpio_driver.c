@@ -461,7 +461,6 @@ void GPIO_IRQInterruptConfig(uint8_t IRQNumber, uint8_t EnorDi)
 
 		}
 	}
-
 }
 
 /*********************************************************************

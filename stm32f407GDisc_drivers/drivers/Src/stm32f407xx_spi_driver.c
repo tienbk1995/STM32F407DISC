@@ -232,11 +232,11 @@ void SPI_ReceiveData(SPI_Handle_t *pSPIHandle, uint8_t *pRxBuffer, uint32_t Leng
 /*********************************************************************
  * @fn      		  - SPI_IRQInterruptConfig
  *
- * @brief             - This function is to configure SPI interrupt
+ * @brief             - This function is to configure SPI interrupt mode
  *
+ * @param[in]         - IRQNumber: SPI IRQ number
+ * @param[in]         - EnorDi: ENABLE or DISABLE macro
  * @param[in]         - none
- * @param[in]         - none
- * @param[in]         -
  *
  * @return            -  none
  *
@@ -245,7 +245,44 @@ void SPI_ReceiveData(SPI_Handle_t *pSPIHandle, uint8_t *pRxBuffer, uint32_t Leng
  */
 void SPI_IRQInterruptConfig(uint8_t IRQNumber, uint8_t EnorDi)
 {
+	if (ENABLE == EnorDi)
+	{
+		if (IRQNumber <= 31)
+		{
+			*NVIC_ISER0 |= (1 << IRQNumber);
+		}
+		else if (IRQNumber > 31 && IRQNumber < 64)
+		{
+			*NVIC_ISER1 |= (1 << (IRQNumber % 32));
+		}
+		else if (IRQNumber >= 64 && IRQNumber < 96)
+		{
+			*NVIC_ISER2 |= (1 << (IRQNumber % 64));
+		}
+		else
+		{
 
+		}
+	}
+	else // Disable
+	{
+		if (IRQNumber <= 31)
+		{
+			*NVIC_ICER0 |= (1 << IRQNumber);
+		}
+		else if (IRQNumber > 31 && IRQNumber < 64)
+		{
+			*NVIC_ICER1 |= (1 << (IRQNumber % 32));
+		}
+		else if (IRQNumber >= 64 && IRQNumber < 96)
+		{
+			*NVIC_ICER2 |= (1 << (IRQNumber % 64));
+		}
+		else
+		{
+
+		}
+	}
 }
 /*
  * SPI Interrupt priority
@@ -255,18 +292,26 @@ void SPI_IRQInterruptConfig(uint8_t IRQNumber, uint8_t EnorDi)
  *
  * @brief             - This function is to set interrupt priority for SPI
  *
- * @param[in]         - none
+ * @param[in]         - IRQNumber: SPI IRQ number
+ * @param[in]         - Priority: Interrupt priority level
  * @param[in]         - none
  * @param[in]         -
  *
  * @return            -  none
  *
- * @Note              -  none
+ * @Note              -  Priority value should be between 0 and 15.
+ * 						 The lower the number, the higher the priority.
 
  */
 void SPI_IRQPriorityConfig(uint8_t IRQNumber, uint32_t Priority)
 {
+	//1. first lets find out the ipr register
+	uint8_t iprx = IRQNumber / 4;
+	uint8_t iprx_section = IRQNumber %4 ;
 
+	uint8_t shift_amount = ( 8 * iprx_section) + ( 8 - NO_PR_BITS_IMPLEMENTED) ;
+
+	*(  NVIC_PR_BASE_ADDR + iprx ) |=  ( Priority << shift_amount );
 }
 /*
  * SPI IRQ
@@ -362,4 +407,66 @@ void  SPI_SSIConfig(SPI_Handle_t *pSPIHandle, uint8_t EnOrDi)
     {
         pSPIHandle->pSPIx->CR1 &=  ~(1 << SPI_CR1_SSI);
     }
+}
+
+/*********************************************************************
+ * @fn      		  - SPI_SendDataIT
+ *
+ * @brief             - This function is to send data using interrupt mode.
+ *
+ * @param[in]         - pSPIHandle: Pointer to the SPI handle structure.
+ * @param[in]         - pTxBuffer: Pointer to the data buffer to be transmitted.
+ * @param[in]         - Length: Length of the data to be transmitted.
+ *
+ * @return            - Status of the transmission request (e.g: SUCCESS, BUSY, OR FAILURE...).
+ *
+ * @Note              - This function is intended for non-blocking data transmission using interrupts.
+ *********************************************************************/
+uint8_t SPI_SendDataIT(SPI_Handle_t *pSPIHandle, void *pTxBuffer, uint32_t Length)
+{
+	uint8_t state = pSPIHandle->TxState;
+	// Check if SPI is already busy in transmission
+	if (state != SPI_BUSY_IN_TX)
+	{
+		// 1. Save Tx buffer address and length information in the SPI handle structure
+		pSPIHandle->pTxBuffer = (uint8_t *)pTxBuffer;
+		pSPIHandle->TxLen = Length;
+		// 2. Mark the SPI state as busy in transmission so that no other code can take over the SPI peripheral until transmission is complete
+		pSPIHandle->TxState = SPI_BUSY_IN_TX;
+		// 3. Enable TXE interrupt
+		pSPIHandle->pSPIx->CR2 |= (1 << SPI_CR2_TXEIE);
+		// 4. Hand over the SPI peripheral to the IRQ handler
+	}
+	return state;
+}
+
+/*********************************************************************
+ * @fn      		  - SPI_ReceiveDataIT
+ *
+ * @brief             - This function is to receive data using interrupt mode.
+ *
+ * @param[in]         - pSPIHandle: Pointer to the SPI handle structure.
+ * @param[in]         - pRxBuffer: Pointer to the data buffer to be received.
+ * @param[in]         - Length: Length of the data to be received.
+ *
+ * @return            - Status of the transmission request (e.g: SUCCESS, BUSY, OR FAILURE...).
+ *
+ * @Note              - This function is intended for non-blocking data transmission using interrupts.
+ *********************************************************************/
+uint8_t SPI_ReceiveDataIT(SPI_Handle_t *pSPIHandle, void *pRxBuffer, uint32_t Length)
+{
+	uint8_t state = pSPIHandle->RxState;
+	// Check if SPI is already busy in reception
+	if (state != SPI_BUSY_IN_RX)
+	{
+		// 1. Save Rx buffer address and length information in the SPI handle structure
+		pSPIHandle->pRxBuffer = (uint8_t *)pRxBuffer;
+		pSPIHandle->RxLen = Length;
+		// 2. Mark the SPI state as busy in reception so that no other code can take over the SPI peripheral until reception is complete
+		pSPIHandle->RxState = SPI_BUSY_IN_RX;
+		// 3. Enable RXNE interrupt
+		pSPIHandle->pSPIx->CR2 |= (1 << SPI_CR2_RXNEIE);
+		// 4. Hand over the SPI peripheral to the IRQ handler
+	}
+	return state;
 }
