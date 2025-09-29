@@ -6,6 +6,11 @@
  */
 #include <stm32f407xx_spi_driver.h>
 
+/* SPI Interrupt Handlers */
+static void spi_txe_interrupt_handle(SPI_Handle_t *pSPIHandle);
+static void spi_rxne_interrupt_handle(SPI_Handle_t *pSPIHandle);
+static void spi_ovr_interrupt_handle(SPI_Handle_t *pSPIHandle);
+
 /*
  * SPI Clock Controller
  */
@@ -163,7 +168,7 @@ void SPI_HWDeInit(SPI_Handle_t *pSPIHandle)
  * @Note              -  This is a blocking call, polling technique
 
  */
-void SPI_SendData(SPI_Handle_t *pSPIHandle, void *pTxBuffer, uint32_t Length)
+void SPI_SendData(SPI_Handle_t *pSPIHandle, uint8_t *pTxBuffer, uint32_t Length)
 {
 	while (Length > 0)
 	{
@@ -332,6 +337,35 @@ void SPI_IRQPriorityConfig(uint8_t IRQNumber, uint32_t Priority)
  */
 void SPI_IRQHandling(SPI_Handle_t *pSPIHandle)
 {
+	uint8_t txe_bit, txe_interrupt_bit, rxne_bit, rxne_interrupt_bit, ovr_bit, ovr_err_bit;
+
+	txe_bit = SPI_READ_BIT(pSPIHandle->pSPIx->SR, SPI_SR_TXE);
+	txe_interrupt_bit = SPI_READ_BIT(pSPIHandle->pSPIx->CR2, SPI_CR2_TXEIE);
+	rxne_bit = SPI_READ_BIT(pSPIHandle->pSPIx->SR, SPI_SR_RXNE);
+	rxne_interrupt_bit = SPI_READ_BIT(pSPIHandle->pSPIx->CR2, SPI_CR2_RXNEIE);
+	ovr_bit = SPI_READ_BIT(pSPIHandle->pSPIx->SR, SPI_SR_OVR);
+	ovr_err_bit = SPI_READ_BIT(pSPIHandle->pSPIx->CR2, SPI_CR2_ERRIE);
+
+	// Check for TXE
+	if (txe_bit && txe_interrupt_bit)
+	{
+		// Handle TXE
+		spi_txe_interrupt_handle(pSPIHandle);
+	}
+
+	// Check for RXNE
+	if (rxne_bit && rxne_interrupt_bit)
+	{
+		// Handle RXNE
+		spi_rxne_interrupt_handle(pSPIHandle);
+	}
+
+	// Check for OVR
+	if (ovr_bit && ovr_err_bit)
+	{
+		// Handle OVR
+		spi_ovr_interrupt_handle(pSPIHandle);
+	}
 
 }
 
@@ -422,7 +456,7 @@ void  SPI_SSIConfig(SPI_Handle_t *pSPIHandle, uint8_t EnOrDi)
  *
  * @Note              - This function is intended for non-blocking data transmission using interrupts.
  *********************************************************************/
-uint8_t SPI_SendDataIT(SPI_Handle_t *pSPIHandle, void *pTxBuffer, uint32_t Length)
+uint8_t SPI_SendDataIT(SPI_Handle_t *pSPIHandle, uint8_t *pTxBuffer, uint32_t Length)
 {
 	uint8_t state = pSPIHandle->TxState;
 	// Check if SPI is already busy in transmission
@@ -453,7 +487,7 @@ uint8_t SPI_SendDataIT(SPI_Handle_t *pSPIHandle, void *pTxBuffer, uint32_t Lengt
  *
  * @Note              - This function is intended for non-blocking data transmission using interrupts.
  *********************************************************************/
-uint8_t SPI_ReceiveDataIT(SPI_Handle_t *pSPIHandle, void *pRxBuffer, uint32_t Length)
+uint8_t SPI_ReceiveDataIT(SPI_Handle_t *pSPIHandle, uint8_t *pRxBuffer, uint32_t Length)
 {
 	uint8_t state = pSPIHandle->RxState;
 	// Check if SPI is already busy in reception
@@ -469,4 +503,129 @@ uint8_t SPI_ReceiveDataIT(SPI_Handle_t *pSPIHandle, void *pRxBuffer, uint32_t Le
 		// 4. Hand over the SPI peripheral to the IRQ handler
 	}
 	return state;
+}
+
+/*********************************************************************
+ * @fn      		  - spi_txe_interrupt_handle
+ *
+ * @brief             - This function is to handle the TXE interrupt.
+ *
+ * @param[in]         - pSPIHandle: Pointer to the SPI handle structure.
+ *
+ * @return            - None
+ *
+ * @Note              - This function is intended for non-blocking data transmission using interrupts.
+ *********************************************************************/
+static void spi_txe_interrupt_handle(SPI_Handle_t *pSPIHandle)
+{
+	if (SPI_DFF_8BITS == SPI_GETDFFTYPE(pSPIHandle->SPIConfig.SPI_DFF)) // 8 Bit data loaded
+	{
+		pSPIHandle->pSPIx->DR = *(uint8_t *)pSPIHandle->pTxBuffer; // Read data from local buffer
+		pSPIHandle->TxLen -= 1; // Decrement length
+		pSPIHandle->pTxBuffer++; // Increment buffer pointer
+	}
+	else // 16 Bit data loaded
+	{
+		pSPIHandle->pSPIx->DR = *(uint16_t *)pSPIHandle->pTxBuffer; // Read data from local buffer
+		pSPIHandle->TxLen -= 2; // Decrement length
+		pSPIHandle->pTxBuffer += 2; // Increment buffer pointer
+	}
+
+	if (0 == pSPIHandle->TxLen)
+	{
+		// Tx is done
+		// 1. Disable the TXEIE control bit and clear the TxLen to indicate that transmission is over, invalidating the Tx buffer
+		SPI_CLEAR_BIT(pSPIHandle->pSPIx->CR2, SPI_CR2_TXEIE);
+		pSPIHandle->TxLen = 0;
+		pSPIHandle->pTxBuffer = ((void *)0);
+		// 2. Reset the application state
+		pSPIHandle->TxState = SPI_READY;
+		// 3. Call the application callback to notify that Tx is over
+		SPI_ApplicationEventCallback(pSPIHandle, SPI_EVENT_TX_CMPLT);
+	}
+}
+
+/*********************************************************************
+ * @fn      		  - spi_rxne_interrupt_handle
+ *
+ * @brief             - This function is to handle the RXNE interrupt.
+ *
+ * @param[in]         - pSPIHandle: Pointer to the SPI handle structure.
+ *
+ * @return            - None
+ *
+ * @Note              - This function is intended for non-blocking data reception using interrupts.
+ *********************************************************************/
+static void spi_rxne_interrupt_handle(SPI_Handle_t *pSPIHandle)
+{
+	if (SPI_DFF_8BITS == SPI_GETDFFTYPE(pSPIHandle->SPIConfig.SPI_DFF))
+	{
+		// 8-bit data loaded
+		*(pSPIHandle->pRxBuffer) = (uint8_t)pSPIHandle->pSPIx->DR; // Read data from SPI data register
+		pSPIHandle->pRxBuffer++; // Increment buffer pointer
+		pSPIHandle->RxLen--; // Decrement length
+	}
+	else
+	{
+		// 16-bit data loaded
+		*((uint16_t*)pSPIHandle->pRxBuffer) = (uint16_t)pSPIHandle->pSPIx->DR; // Read data from SPI data register
+		pSPIHandle->pRxBuffer += 2; // Increment buffer pointer
+		pSPIHandle->RxLen -= 2; // Decrement length
+	}
+
+	if (0 == pSPIHandle->RxLen)
+	{
+		// Rx is done
+		// 1. Disable the RXNEIE control bit and clear the RxLen to indicate that reception is over, invalidating the Rx buffer
+		pSPIHandle->pRxBuffer = ((void *)0);
+		SPI_CLEAR_BIT(pSPIHandle->pSPIx->CR2, SPI_CR2_RXNEIE);
+		pSPIHandle->RxLen = 0;
+		// 2. Reset the application state
+		pSPIHandle->RxState = SPI_READY;
+		// 3. Call the application callback to notify that Rx is over
+		SPI_ApplicationEventCallback(pSPIHandle, SPI_EVENT_RX_CMPLT);
+	}
+}
+
+/*********************************************************************
+ * @fn      		  - spi_ovr_interrupt_handle
+ *
+ * @brief             - This function is to handle the OVR interrupt.
+ *
+ * @param[in]         - pSPIHandle: Pointer to the SPI handle structure.
+ *
+ * @return            - None
+ *
+ * @Note              - This function is intended for handling overrun errors.
+ *********************************************************************/
+void spi_ovr_interrupt_handle(SPI_Handle_t *pSPIHandle)
+{
+	uint8_t temp;
+	// 1. Clear the OVR flag
+	if (pSPIHandle->TxState != SPI_BUSY_IN_TX) // Only if not busy in transmission
+	{
+		temp = pSPIHandle->pSPIx->DR;
+		temp = pSPIHandle->pSPIx->SR;
+	}
+	(void)temp; // To avoid unused variable warning
+
+	// 2. Notify the application about the overrun error
+	SPI_ApplicationEventCallback(pSPIHandle, SPI_EVENT_OVR_ERR);
+}
+/*********************************************************************
+ * @fn      		  - SPI_ApplicationEventCallback
+ *
+ * @brief             - This is a weak implementation of the application callback function.
+ *                      The application may override this function to handle specific events.
+ *
+ * @param[in]         - pSPIHandle: Pointer to the SPI handle structure.
+ * @param[in]         - AppEv: Application event (e.g., SPI_EVENT_TX_CMPLT, SPI_EVENT_RX_CMPLT, SPI_EVENT_OVR_ERR).
+ *
+ * @return            - None
+ *
+ * @Note              - This function is declared as __weak, allowing the application to provide its own implementation.
+ *********************************************************************/
+__weak void SPI_ApplicationEventCallback(SPI_Handle_t *pSPIHandle, uint8_t AppEv)
+{
+	// This is a weak implementation. The application may override this function.
 }

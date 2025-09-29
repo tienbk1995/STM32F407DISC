@@ -11,6 +11,7 @@
 #include <stdint.h>
 
 #define __vo volatile
+#define __weak __attribute__((weak))
 /************************************************ CPU registers base address ************************************************/
 // NVIC_ISER -> Enable interrupt
 #define NVIC_ISER0						((__vo uint32_t *)0xE000E100)
@@ -319,25 +320,25 @@ typedef struct
  * TODO: You may complete this list for other peripherals
  */
 
-#define IRQ_NO_EXTI0 		6
-#define IRQ_NO_EXTI1 		7
-#define IRQ_NO_EXTI2 		8
-#define IRQ_NO_EXTI3 		9
-#define IRQ_NO_EXTI4 		10
-#define IRQ_NO_EXTI9_5 		23
-#define IRQ_NO_EXTI15_10 	40
-#define IRQ_NO_SPI1			35
+#define IRQ_NO_EXTI0 		    6
+#define IRQ_NO_EXTI1 		    7
+#define IRQ_NO_EXTI2 		    8
+#define IRQ_NO_EXTI3 		    9
+#define IRQ_NO_EXTI4 		    10
+#define IRQ_NO_EXTI9_5 		  23
+#define IRQ_NO_EXTI15_10 	  40
+#define IRQ_NO_SPI1			    35
 #define IRQ_NO_SPI2         36
 #define IRQ_NO_SPI3         51
 #define IRQ_NO_SPI4
 #define IRQ_NO_I2C1_EV     	31
 #define IRQ_NO_I2C1_ER      32
-#define IRQ_NO_USART1	    37
-#define IRQ_NO_USART2	    38
-#define IRQ_NO_USART3	    39
-#define IRQ_NO_UART4	    52
-#define IRQ_NO_UART5	    53
-#define IRQ_NO_USART6	    71
+#define IRQ_NO_USART1	      37
+#define IRQ_NO_USART2	      38
+#define IRQ_NO_USART3	      39
+#define IRQ_NO_UART4	      52
+#define IRQ_NO_UART5	      53
+#define IRQ_NO_USART6	      71
 
 // IRQ Priority
 #define NVIC_IRQ_PRI0   	 0
@@ -345,29 +346,29 @@ typedef struct
 
 
 /* Generic macro */
-#define ENABLE 1
-#define DISABLE 0
-#define SET ENABLE
-#define RESET DISABLE
+#define ENABLE      1
+#define DISABLE     0
+#define SET         ENABLE
+#define RESET       DISABLE
 
 /**************************************** Bit position definitions ***************************************/
 /* SPI */
 /*
  * Bit position definitions SPI_CR1
  */
-#define SPI_CR1_CPHA     				 0
-#define SPI_CR1_CPOL      				 1
-#define SPI_CR1_MSTR     				 2
-#define SPI_CR1_BR   					 3
-#define SPI_CR1_SPE     				 6
-#define SPI_CR1_LSBFIRST   			 	 7
-#define SPI_CR1_SSI     				 8
-#define SPI_CR1_SSM      				 9
-#define SPI_CR1_RXONLY      		 	10
-#define SPI_CR1_DFF     			 	11
-#define SPI_CR1_CRCNEXT   			 	12
-#define SPI_CR1_CRCEN   			 	13
-#define SPI_CR1_BIDIOE     			 	14
+#define SPI_CR1_CPHA     				    0
+#define SPI_CR1_CPOL      				  1
+#define SPI_CR1_MSTR     				    2
+#define SPI_CR1_BR   					      3
+#define SPI_CR1_SPE     				    6
+#define SPI_CR1_LSBFIRST   			 	  7
+#define SPI_CR1_SSI     				    8
+#define SPI_CR1_SSM      				    9
+#define SPI_CR1_RXONLY      		 	  10
+#define SPI_CR1_DFF     			 	    11
+#define SPI_CR1_CRCNEXT   			 	  12
+#define SPI_CR1_CRCEN   			 	    13
+#define SPI_CR1_BIDIOE     			 	  14
 #define SPI_CR1_BIDIMODE      			15
 
 /*
@@ -375,11 +376,11 @@ typedef struct
  */
 #define SPI_CR2_RXDMAEN		 			0
 #define SPI_CR2_TXDMAEN				 	1
-#define SPI_CR2_SSOE				 	2
-#define SPI_CR2_FRF						4
-#define SPI_CR2_ERRIE					5
+#define SPI_CR2_SSOE				 	  2
+#define SPI_CR2_FRF						  4
+#define SPI_CR2_ERRIE					  5
 #define SPI_CR2_RXNEIE				 	6
-#define SPI_CR2_TXEIE					7
+#define SPI_CR2_TXEIE					  7
 
 
 /*

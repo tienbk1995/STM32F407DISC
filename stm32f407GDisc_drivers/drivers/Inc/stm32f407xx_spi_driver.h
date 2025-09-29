@@ -64,6 +64,15 @@
  */
 #define SPI_GETFLAGSTATUS(SPIx_SR, flag_name) ((SPIx_SR & flag_name) ? SPI_SET : SPI_RESET)
 #define SPI_GETDFFTYPE(SPIx_DFF_TYPE) ((SPIx_DFF_TYPE == SPI_DFF_8BITS) ? SPI_DFF_8BITS : SPI_DFF_16BITS)
+#define SPI_READ_BIT(SPIx_reg, bit_name) ((SPIx_reg & (1 << bit_name)) ? SPI_SET : SPI_RESET)
+#define SPI_CLEAR_BIT(SPIx_reg, bit_name) (SPIx_reg &= ~(1 << bit_name))
+#define SPI_SET_BIT(SPIx_reg, bit_name) (SPIx_reg |= (1 << bit_name))
+
+/* Callback completion flag */
+#define SPI_EVENT_TX_CMPLT  1
+#define SPI_EVENT_RX_CMPLT  2
+#define SPI_EVENT_OVR_ERR   3
+#define SPI_EVENT_CRC_ERR   4
 
 /********************************************** Typedef definition ***********************************************/
 /* Configuration SPI */
@@ -106,9 +115,9 @@ void SPI_HWDeInit(SPI_Handle_t *pSPIHandle);
 /*
  * Communication
  */
-void SPI_SendData(SPI_Handle_t *pSPIHandle, void *pTxBuffer, uint32_t Length);
+void SPI_SendData(SPI_Handle_t *pSPIHandle, uint8_t *pTxBuffer, uint32_t Length);
 void SPI_ReceiveData(SPI_Handle_t *pSPIHandle, uint8_t *pRxBuffer, uint32_t Length);
-uint8_t SPI_SendDataIT(SPI_Handle_t *pSPIHandle, void *pTxBuffer, uint32_t Length);
+uint8_t SPI_SendDataIT(SPI_Handle_t *pSPIHandle, uint8_t *pTxBuffer, uint32_t Length);
 uint8_t SPI_ReceiveDataIT(SPI_Handle_t *pSPIHandle, uint8_t *pRxBuffer, uint32_t Length);
 
 /*
@@ -117,6 +126,7 @@ uint8_t SPI_ReceiveDataIT(SPI_Handle_t *pSPIHandle, uint8_t *pRxBuffer, uint32_t
 void SPI_IRQInterruptConfig(uint8_t IRQNumber, uint8_t EnorDi);
 void SPI_IRQPriorityConfig(uint8_t IRQNumber, uint32_t Priority);
 void SPI_IRQHandling(SPI_Handle_t *pHandle);
+void SPI_ApplicationEventCallback(SPI_Handle_t *pSPIHandle, uint8_t AppEv);
 
 /*
  * Peripheral Control
